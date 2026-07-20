@@ -132,7 +132,10 @@
                       </button>
                       <div v-if="!optionsFor(f).length" class="vd-optionlist__empty">No options bound</div>
                     </div>
-                    <div class="vd-editactions"><button type="button" class="vd-iconbtn2" @click="cancelEdit"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('x')"></path></svg></button></div>
+                    <div class="vd-editactions">
+                      <button type="button" class="vd-iconbtn2 vd-iconbtn2--save" :disabled="editValue === '' || editValue == null" @click="saveEdit(f)" title="Save"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('check')"></path></svg></button>
+                      <button type="button" class="vd-iconbtn2" @click="cancelEdit" title="Cancel"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('x')"></path></svg></button>
+                    </div>
                   </template>
                   <!-- tags / multiselect -->
                   <template v-else-if="f.type === 'tags'">
@@ -785,9 +788,13 @@ export default {
         if (o && typeof o === "object") {
           const label = o[lk] != null && o[lk] !== "" ? o[lk] : (o.label || o.name || o.title || o.value || "");
           const value = o[vk] != null && o[vk] !== "" ? o[vk] : (o.airtable_id != null ? o.airtable_id : (o.id != null ? o.id : label));
-          return { label: String(label), value };
+          // Carry both ids so the fieldEdit event can hand back whichever the
+          // caller needs (Airtable id vs Supabase uuid).
+          const id = o.id != null && o.id !== "" ? o.id : "";
+          const airtableId = o.airtable_id != null && o.airtable_id !== "" ? o.airtable_id : "";
+          return { label: String(label), value, id, airtableId };
         }
-        return { label: String(o), value: o };
+        return { label: String(o), value: o, id: o, airtableId: "" };
       });
       return mapped;
     },
@@ -835,7 +842,8 @@ export default {
       });
     },
     cancelEdit() { this.editingKey = null; this.editValue = ""; this.editArray = []; },
-    pickOption(f, opt) { this.editValue = opt.value; this.saveEdit(f); },
+    // Highlight only — an explicit save button commits (consistent with tags).
+    pickOption(f, opt) { this.editValue = opt.value; },
     toggleTag(opt) {
       const i = this.editArray.findIndex((v) => String(v) === String(opt.value));
       if (i >= 0) this.editArray.splice(i, 1); else this.editArray.push(opt.value);
@@ -844,15 +852,25 @@ export default {
       const value = this.editArray.slice();
       this.editingKey = null;
       const opts = this.optionsFor(f);
-      const valueLabel = value.map((v) => { const o = opts.find((o) => String(o.value) === String(v)); return o ? o.label : String(v); });
-      this.fireEvent("fieldEdit", { key: f.key, label: f.label, value, valueLabel, type: "tags", patch: { [f.key]: value } });
+      const chosen = value.map((v) => opts.find((o) => String(o.value) === String(v)) || { value: v, label: String(v), id: "", airtableId: "" });
+      const valueLabel = chosen.map((o) => o.label);
+      const ids = chosen.map((o) => o.id);
+      const airtableIds = chosen.map((o) => o.airtableId);
+      this.fireEvent("fieldEdit", {
+        key: f.key, label: f.label, value, valueLabel, ids, airtableIds,
+        options: chosen.map((o) => ({ value: o.value, label: o.label, id: o.id, airtable_id: o.airtableId })),
+        type: "tags", patch: { [f.key]: value },
+      });
     },
     saveEdit(f) {
       const value = this.editValue;
       this.editingKey = null;
-      let valueLabel = value;
-      if (f.type === "select") { const opt = this.optionsFor(f).find((o) => String(o.value) === String(value)); valueLabel = opt ? opt.label : value; }
-      this.fireEvent("fieldEdit", { key: f.key, label: f.label, value, valueLabel, type: f.type, patch: { [f.key]: value } });
+      let valueLabel = value, id = "", airtableId = "";
+      if (f.type === "select") {
+        const opt = this.optionsFor(f).find((o) => String(o.value) === String(value));
+        if (opt) { valueLabel = opt.label; id = opt.id; airtableId = opt.airtableId; }
+      }
+      this.fireEvent("fieldEdit", { key: f.key, label: f.label, value, valueLabel, id, airtableId, type: f.type, patch: { [f.key]: value } });
     },
     // ---- activity feed field resolution ----
     authorName(f) { if (!f) return ""; return f.author || (f.user_id && f.user_id.name) || (f.user && f.user.name) || f.name || ""; },
@@ -1191,6 +1209,7 @@ export default {
 .vd-editactions { display: flex; gap: 6px; justify-content: flex-end; }
 .vd-iconbtn2 { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: background .15s, filter .15s; }
 .vd-iconbtn2:hover { background: var(--surface-2); }
+.vd-iconbtn2:disabled { opacity: .45; cursor: not-allowed; }
 .vd-iconbtn2 .vd-svg { width: 16px; height: 16px; }
 .vd-iconbtn2--save { color: #fff; background: var(--primary); border-color: var(--primary); }
 .vd-iconbtn2--save:hover { filter: brightness(1.06); }

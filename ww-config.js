@@ -16,7 +16,10 @@ export default {
     { name: "stageClick", label: { en: "On pipeline stage click" }, event: { value: "", label: "", index: 0 } },
     { name: "onboardingItemClick", label: { en: "On onboarding item click" }, event: { index: 0, id: "", item: {} } },
     // details
-    { name: "fieldEdit", label: { en: "On detail field save" }, event: { key: "", label: "", value: "", valueLabel: "", type: "", patch: {} } },
+    // For select fields the event also carries id + airtableId of the chosen option;
+    // for tags it carries ids[] + airtableIds[] + options[] — so you can patch with
+    // either the Supabase id or the Airtable id.
+    { name: "fieldEdit", label: { en: "On detail field save" }, event: { key: "", label: "", value: "", valueLabel: "", id: "", airtableId: "", ids: [], airtableIds: [], options: [], type: "", patch: {} } },
     // activity
     { name: "noteSubmit", label: { en: "On note submit" }, event: { text: "", html: "", mentions: [], mentionIds: [], files: [], attachments: [] } },
     { name: "activityItemClick", label: { en: "On activity item click" }, event: { index: 0, id: "", item: {} } },
