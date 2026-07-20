@@ -1164,18 +1164,32 @@ export default {
 .vd-pill--slate   { background: var(--surface-3); color: var(--text-muted); }
 
 /* ---- onboarding pipeline ---- */
-.vd-pipeline { display: flex; gap: 6px; overflow-x: auto; padding: 8px 2px 4px; scrollbar-width: thin; }
-.vd-stage { flex: 1 0 auto; min-width: 96px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 6px; border: none; background: none; cursor: pointer; font-family: inherit; position: relative; }
-.vd-stage::after { content: ""; position: absolute; top: 22px; left: calc(50% + 20px); right: calc(-50% + 20px); height: 2px; background: var(--border); }
-.vd-stage:last-child::after { display: none; }
-.vd-stage__dot { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--surface); border: 2px solid var(--border-strong); color: var(--text-subtle); font-weight: 700; font-size: 13px; z-index: 1; transition: background .15s, border-color .15s, color .15s; }
+.vd-pipeline { display: flex; gap: 0; overflow-x: auto; padding: 14px 2px 6px; scrollbar-width: thin; }
+/* Equal-width stages (flex-basis 0) so dots are evenly spaced and every
+   connector is the same length. */
+.vd-stage { flex: 1 1 0; min-width: 92px; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 8px 4px; border: none; background: none; cursor: pointer; font-family: inherit; position: relative; }
+/* Connector runs between adjacent dot centers, centered on the dot's vertical
+   midpoint (padding-top 8px + radius 20px = 28px). */
+.vd-stage:not(:last-child)::after {
+  content: ""; position: absolute; top: 28px; left: calc(50% + 22px); width: calc(100% - 44px); height: 3px;
+  border-radius: 3px; background: var(--border); transform: translateY(-50%); transition: background .35s ease;
+}
+.vd-stage__dot { position: relative; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--surface); border: 2px solid var(--border-strong); color: var(--text-subtle); font-weight: 700; font-size: 13px; z-index: 1; transition: background .2s, border-color .2s, color .2s, box-shadow .2s, transform .2s; }
 .vd-stage__dot .vd-svg { width: 18px; height: 18px; }
-.vd-stage__label { font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-align: center; line-height: 1.3; }
+.vd-stage__label { font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-align: center; line-height: 1.3; transition: color .2s; }
 .vd-stage--done .vd-stage__dot { background: var(--primary); border-color: var(--primary); color: #fff; }
 .vd-stage--done::after { background: var(--primary); }
-.vd-stage--current .vd-stage__dot { background: color-mix(in srgb, var(--primary) 14%, transparent); border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent); }
-.vd-stage--current .vd-stage__label { color: var(--primary); }
-.vd-stage:hover .vd-stage__dot { border-color: var(--primary); }
+.vd-stage--current .vd-stage__dot { background: color-mix(in srgb, var(--primary) 16%, transparent); border-color: var(--primary); color: var(--primary); animation: vd-pulse 2s ease-out infinite; }
+.vd-stage--current .vd-stage__label { color: var(--primary); font-weight: 700; }
+.vd-stage:hover .vd-stage__dot { border-color: var(--primary); transform: translateY(-1px); }
+@keyframes vd-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 45%, transparent); }
+  70%  { box-shadow: 0 0 0 11px color-mix(in srgb, var(--primary) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vd-stage--current .vd-stage__dot { animation: none; box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent); }
+}
 
 /* ---- onboarding checklist ---- */
 .vd-checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
