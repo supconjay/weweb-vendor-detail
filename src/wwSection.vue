@@ -105,7 +105,7 @@
                 <strong class="vd-checkitem__title">{{ rowVal(it, ['title','label','name']) }}</strong>
                 <span class="vd-checkitem__desc">{{ rowVal(it, ['description','desc','instructions']) }}</span>
               </div>
-              <span class="vd-pill" :class="`vd-pill--${obTone(it)}`">{{ rowVal(it, ['status']) || 'Not Submitted' }}</span>
+              <span class="vd-pill" :class="`vd-pill--${obTone(it)}`">{{ prettyStatus(rowVal(it, ['status']) || 'Not Submitted') }}</span>
             </li>
           </ul>
           <div v-else class="vd-empty"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('clipboard')"></path></svg><span>No onboarding items</span></div>
@@ -327,31 +327,27 @@
       <section v-else-if="activeTab === 'insurance'" class="vd-tabpane">
         <div class="vd-card">
           <div class="vd-card__header"><div><h2 class="vd-card__heading vd-card__heading--lg">Insurance</h2><p class="vd-card__sub">{{ insurances.length }} polic{{ insurances.length === 1 ? 'y' : 'ies' }}</p></div></div>
-          <div v-if="insurances.length" class="vd-insgrid">
-            <div v-for="(ins, i) in insurances" :key="i" class="vd-inscard">
-              <div class="vd-inscard__top">
-                <div class="vd-inscard__title">
-                  <span class="vd-inscard__icon"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('shield')"></path></svg></span>
-                  <div class="vd-inscard__titletext">
-                    <strong>{{ rowVal(ins, ['policy_type']) || 'Policy' }}</strong>
-                    <span class="vd-inscard__sub">{{ rowVal(ins, ['insurer_name']) || '—' }}</span>
-                  </div>
-                </div>
-                <span class="vd-pill" :class="`vd-pill--${statusKey(rowVal(ins, ['status']))}`"><span class="vd-pill__dot"></span>{{ rowVal(ins, ['status']) || 'pending' }}</span>
-              </div>
-              <div class="vd-inscard__grid">
-                <div class="vd-mini"><span class="vd-mini__label">Policy #</span><span class="vd-mini__value">{{ rowVal(ins, ['policy_number']) || '—' }}</span></div>
-                <div class="vd-mini"><span class="vd-mini__label">Coverage</span><span class="vd-mini__value">{{ money(rowVal(ins, ['coverage_amount'])) }}</span></div>
-                <div class="vd-mini"><span class="vd-mini__label">Expires</span><span class="vd-mini__value" :class="{ 'vd-text--danger': isExpired(ins) }">{{ fmtDate(rowVal(ins, ['expiration_date'])) }}</span></div>
-                <div class="vd-mini"><span class="vd-mini__label">Agent</span><span class="vd-mini__value">{{ rowVal(ins, ['agent_name']) || '—' }}</span></div>
-              </div>
-              <div class="vd-inscard__foot">
-                <span v-if="isVerified(ins)" class="vd-verified"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('check-circle')"></path></svg> Verified</span>
-                <button v-else type="button" class="vd-btn vd-btn--sm" @click="emitItem('verifyInsurance', i, ins)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('check')"></path></svg> Verify</button>
-                <div class="vd-inscard__spacer"></div>
-                <button type="button" class="vd-btn vd-btn--sm vd-btn--primary" @click="emitItem('insuranceClick', i, ins)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('external')"></path></svg> View</button>
-              </div>
-            </div>
+          <div v-if="insurances.length" class="vd-table__wrap">
+            <table class="vd-table">
+              <thead><tr><th>Policy</th><th>Insurer</th><th>Policy #</th><th class="vd-num">Coverage</th><th>Status</th><th>Expires</th><th class="vd-num">Actions</th></tr></thead>
+              <tbody>
+                <tr v-for="(ins, i) in insurances" :key="i">
+                  <td><strong>{{ rowVal(ins, ['policy_type']) || 'Policy' }}</strong></td>
+                  <td class="vd-muted">{{ rowVal(ins, ['insurer_name']) || '—' }}</td>
+                  <td class="vd-muted">{{ rowVal(ins, ['policy_number']) || '—' }}</td>
+                  <td class="vd-num">{{ money(rowVal(ins, ['coverage_amount'])) }}</td>
+                  <td><span class="vd-pill" :class="`vd-pill--${statusKey(rowVal(ins, ['status']))}`"><span class="vd-pill__dot"></span>{{ prettyStatus(rowVal(ins, ['status']) || 'pending') }}</span></td>
+                  <td :class="{ 'vd-text--danger': isExpired(ins) }">{{ fmtDate(rowVal(ins, ['expiration_date'])) }}</td>
+                  <td class="vd-num">
+                    <div class="vd-rowactions">
+                      <span v-if="isVerified(ins)" class="vd-verified"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('check-circle')"></path></svg> Verified</span>
+                      <button v-else type="button" class="vd-btn vd-btn--sm" @click="emitItem('verifyInsurance', i, ins)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('check')"></path></svg> Verify</button>
+                      <button type="button" class="vd-btn vd-btn--sm vd-btn--primary" @click="emitItem('insuranceClick', i, ins)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('external')"></path></svg> View</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
           <div v-else class="vd-empty"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('shield')"></path></svg><span>No insurance policies on file</span></div>
         </div>
@@ -717,6 +713,7 @@ export default {
       if (isNaN(d)) return String(raw);
       return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
     },
+    prettyStatus(s) { return String(s == null ? "" : s).replace(/[_-]+/g, " ").trim(); },
     statusKey(status) {
       const s = (status || "").toString().toLowerCase();
       if (s.includes("progress") || s.includes("review")) return "warning";
@@ -1233,6 +1230,7 @@ export default {
 .vd-inscard__spacer { flex: 1; }
 .vd-verified { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: var(--success); }
 .vd-verified .vd-svg { width: 16px; height: 16px; }
+.vd-rowactions { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
 
 /* ---- reviews coming soon ---- */
 .vd-comingsoon { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 60px 16px; text-align: center; }
