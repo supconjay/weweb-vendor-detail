@@ -30,8 +30,7 @@
         <div class="vd-header__idmeta">
           <h1 class="vd-header__name">{{ vendorName || 'Vendor' }}</h1>
           <div class="vd-badgerow">
-            <span v-if="vendorStage" class="vd-badge vd-badge--stage">{{ vendorStage }}</span>
-            <span v-if="vendorStatus" class="vd-pill" :class="`vd-pill--${statusKey(vendorStatus)}`"><span class="vd-pill__dot"></span>{{ vendorStatus }}</span>
+            <span v-if="vendorStatus" class="vd-pill" :class="`vd-pill--${statusKey(vendorStatus)}`"><span class="vd-pill__dot"></span>{{ prettyStatus(vendorStatus) }}</span>
           </div>
         </div>
       </div>
@@ -137,13 +136,15 @@
                   </template>
                   <!-- tags / multiselect -->
                   <template v-else-if="f.type === 'tags'">
+                    <input class="vd-input vd-tagsearch" v-model="tagQuery" ref="editor" placeholder="Search options…" @keydown.esc="cancelEdit" />
                     <div class="vd-tagpicker">
-                      <button v-for="opt in optionsFor(f)" :key="String(opt.value)" type="button" class="vd-tagopt"
+                      <button v-for="opt in filteredOptions(f)" :key="String(opt.value)" type="button" class="vd-tagopt"
                         :class="{ 'vd-tagopt--on': editArray.some(v => String(v) === String(opt.value)) }" @click="toggleTag(opt)">
                         <svg v-if="editArray.some(v => String(v) === String(opt.value))" class="vd-svg" v-bind="svgAttrs"><path :d="ic('check')"></path></svg>
                         {{ opt.label }}
                       </button>
                       <div v-if="!optionsFor(f).length" class="vd-optionlist__empty">No options bound</div>
+                      <div v-else-if="!filteredOptions(f).length" class="vd-optionlist__empty">No matches</div>
                     </div>
                     <div class="vd-editactions">
                       <button type="button" class="vd-iconbtn2 vd-iconbtn2--save" @click="saveTags(f)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('check')"></path></svg></button>
@@ -326,7 +327,10 @@
       <!-- ======================= INSURANCE & LICENSING ======================= -->
       <section v-else-if="activeTab === 'insurance'" class="vd-tabpane">
         <div class="vd-card">
-          <div class="vd-card__header"><div><h2 class="vd-card__heading vd-card__heading--lg">Insurance</h2><p class="vd-card__sub">{{ insurances.length }} polic{{ insurances.length === 1 ? 'y' : 'ies' }}</p></div></div>
+          <div class="vd-card__header">
+            <div><h2 class="vd-card__heading vd-card__heading--lg">Insurance</h2><p class="vd-card__sub">{{ insurances.length }} polic{{ insurances.length === 1 ? 'y' : 'ies' }}</p></div>
+            <button type="button" class="vd-btn vd-btn--primary" @click="emit('addInsurance')"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('plus')"></path></svg> Add Policy</button>
+          </div>
           <div v-if="insurances.length" class="vd-table__wrap">
             <table class="vd-table">
               <thead><tr><th>Policy</th><th>Insurer</th><th>Policy #</th><th class="vd-num">Coverage</th><th>Status</th><th>Expires</th><th class="vd-num">Actions</th></tr></thead>
@@ -353,7 +357,10 @@
         </div>
 
         <div class="vd-card">
-          <h2 class="vd-card__heading vd-card__heading--lg">Licensing</h2>
+          <div class="vd-card__header">
+            <h2 class="vd-card__heading vd-card__heading--lg">Licensing</h2>
+            <button type="button" class="vd-btn vd-btn--primary" @click="emit('addLicense')"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('plus')"></path></svg> Add License</button>
+          </div>
           <div v-if="licenses.length" class="vd-table__wrap">
             <table class="vd-table">
               <thead><tr><th>License Type</th><th>Number</th><th>Status</th><th class="vd-num">Expires</th></tr></thead>
@@ -499,6 +506,7 @@ export default {
       editingKey: null,
       editValue: "",
       editArray: [],
+      tagQuery: "",
       // feed composer
       composerOpen: false,
       composerEmpty: true,
@@ -577,7 +585,7 @@ export default {
         { key: "phone", label: "Phone Number", type: "text" },
         { key: "home_address", label: "Address", type: "text" },
         { key: "dob", label: "Date of Birth", type: "date" },
-        { key: "date_onboarded", label: "Date Onboarded", type: "date" },
+        { key: "date_onboarded", label: "Date Onboarded", type: "date", editable: false },
         { key: "terms", label: "Terms", type: "select", optionsProp: "termOptions" },
         { key: "how_are_they_scheduled", label: "How Are They Scheduled", type: "select", optionsProp: "scheduleOptions" },
         { key: "price_guide_verified", label: "Price Guide Verified", type: "select", optionsProp: "priceGuideOptions" },
@@ -783,6 +791,13 @@ export default {
       });
       return mapped;
     },
+    // Options filtered by the tag-picker search box.
+    filteredOptions(f) {
+      const q = String(this.tagQuery || "").toLowerCase().trim();
+      const list = this.optionsFor(f);
+      if (!q) return list;
+      return list.filter((o) => String(o.label).toLowerCase().indexOf(q) !== -1);
+    },
     displayValue(f) {
       const v = this.vendorField(f.key);
       if (v == null || v === "") return "";
@@ -804,6 +819,7 @@ export default {
     },
     startEdit(f) {
       this.editingKey = f.key;
+      this.tagQuery = "";
       const v = this.vendorField(f.key);
       if (f.type === "tags") {
         this.editArray = Array.isArray(v) ? v.slice() : (v ? [v] : []);
@@ -1187,6 +1203,7 @@ export default {
 .vd-optionlist__check { width: 16px; height: 16px; color: var(--primary); flex: none; }
 .vd-optionlist__empty { padding: 12px; font-size: 12.5px; color: var(--text-subtle); text-align: center; }
 
+.vd-tagsearch { margin-bottom: 8px; }
 .vd-tagpicker { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); max-height: 200px; overflow-y: auto; }
 .vd-tagopt { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s, color .15s, border-color .15s; }
 .vd-tagopt .vd-svg { width: 13px; height: 13px; }

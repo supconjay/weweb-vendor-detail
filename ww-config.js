@@ -30,7 +30,9 @@ export default {
     // insurance & licensing
     { name: "verifyInsurance", label: { en: "On 'Verify' insurance" }, event: { index: 0, id: "", item: {} } },
     { name: "insuranceClick", label: { en: "On insurance click" }, event: { index: 0, id: "", item: {} } },
+    { name: "addInsurance", label: { en: "On 'Add' insurance" }, event: {} },
     { name: "licenseClick", label: { en: "On license row click" }, event: { index: 0, id: "", item: {} } },
+    { name: "addLicense", label: { en: "On 'Add' license" }, event: {} },
     // user
     { name: "roleChange", label: { en: "On role change" }, event: { value: "", label: "", id: "" } },
     { name: "toggleUserActive", label: { en: "On user active toggle" }, event: { active: false, next: true, value: true, id: "" } },
@@ -92,13 +94,13 @@ export default {
     optionLabelField: { label: { en: "Option label field" }, type: "Text", defaultValue: "label", bindable: true, section: "settings" },
     optionValueField: { label: { en: "Option value field (stored id)" }, type: "Text", defaultValue: "airtable_id", bindable: true, section: "settings" },
     // option sources for select / tag fields — bind to your collections
-    categoryOptions: { label: { en: "Category options (bind)" }, type: "Array", bindable: true, defaultValue: ["Service Partner", "3rd Party Vendor", "Supplier"], section: "settings" },
+    categoryOptions: { label: { en: "Category options (bind)" }, type: "Array", bindable: true, defaultValue: ["Service Provider", "Supplier"], section: "settings" },
     skillOptions: { label: { en: "Skill options (bind)" }, type: "Array", bindable: true, defaultValue: ["Carpet Clean", "General Clean", "Licensed Electrical", "Blinds", "Cabinets", "Carpentry", "Decks - Deck Repairs"], section: "settings" },
     marketOptions: { label: { en: "Market options (bind)" }, type: "Array", bindable: true, defaultValue: [], section: "settings" },
     lobOptions: { label: { en: "Line-of-business options (bind)" }, type: "Array", bindable: true, defaultValue: [], section: "settings" },
     termOptions: { label: { en: "Terms options (bind)" }, type: "Array", bindable: true, defaultValue: ["Net 3", "Net 15", "Net 30", "Due on receipt"], section: "settings" },
-    scheduleOptions: { label: { en: "Scheduling method options (bind)" }, type: "Array", bindable: true, defaultValue: ["Phone", "Text", "Email", "Portal"], section: "settings" },
-    priceGuideOptions: { label: { en: "Price guide options (bind)" }, type: "Array", bindable: true, defaultValue: ["Verified", "Not Verified"], section: "settings" },
+    scheduleOptions: { label: { en: "Scheduling method options (bind)" }, type: "Array", bindable: true, defaultValue: ["Send WO Details To Email", "Must Call First", "Free To Schedule", "Assign to Portal"], section: "settings" },
+    priceGuideOptions: { label: { en: "Price guide options (bind)" }, type: "Array", bindable: true, defaultValue: ["Licensed Price Guide", "Standard Price Guide", "Non Price Guide"], section: "settings" },
     statusOptions: { label: { en: "Status options (bind)" }, type: "Array", bindable: true, defaultValue: ["Request", "Active", "Inactive", "Terminated"], section: "settings" },
 
     // ============ activity feed ============
