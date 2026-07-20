@@ -86,6 +86,11 @@ export default {
     // ============ details editing ============
     allowInlineEdit: { label: { en: "Allow inline editing" }, type: "OnOff", defaultValue: true, bindable: true },
     detailFields: { label: { en: "Detail fields override (advanced)" }, type: "Array", bindable: true, defaultValue: [], section: "settings" },
+    // How every bound option collection (skills, markets, LOBs, category, terms, …)
+    // resolves its display label and its stored value. For Airtable-synced lists the
+    // value is usually the airtable_id; switch to "id" if you store the uuid instead.
+    optionLabelField: { label: { en: "Option label field" }, type: "Text", defaultValue: "label", bindable: true, section: "settings" },
+    optionValueField: { label: { en: "Option value field (stored id)" }, type: "Text", defaultValue: "airtable_id", bindable: true, section: "settings" },
     // option sources for select / tag fields — bind to your collections
     categoryOptions: { label: { en: "Category options (bind)" }, type: "Array", bindable: true, defaultValue: ["Service Partner", "3rd Party Vendor", "Supplier"], section: "settings" },
     skillOptions: { label: { en: "Skill options (bind)" }, type: "Array", bindable: true, defaultValue: ["Carpet Clean", "General Clean", "Licensed Electrical", "Blinds", "Cabinets", "Carpentry", "Decks - Deck Repairs"], section: "settings" },

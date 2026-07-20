@@ -771,12 +771,15 @@ export default {
       let src = f.options;
       if ((!src || !src.length) && f.optionsProp) src = this.content[f.optionsProp];
       const list = this.asArray(src);
-      const lk = f.optionLabel || "label";
-      const vk = f.optionValue || "value";
+      // Which keys hold the label and the stored value. Per-field settings win,
+      // then the global props, then sensible fallbacks. Defaults to airtable_id
+      // for the value so Airtable-synced option collections match stored ids.
+      const lk = f.optionLabel || this.content.optionLabelField || "label";
+      const vk = f.optionValue || this.content.optionValueField || "airtable_id";
       const mapped = list.map((o) => {
         if (o && typeof o === "object") {
-          const label = o[lk] != null ? o[lk] : (o.name || o.label || o.title || o.value || "");
-          const value = o[vk] != null ? o[vk] : (o.value != null ? o.value : (o.id != null ? o.id : label));
+          const label = o[lk] != null && o[lk] !== "" ? o[lk] : (o.label || o.name || o.title || o.value || "");
+          const value = o[vk] != null && o[vk] !== "" ? o[vk] : (o.airtable_id != null ? o.airtable_id : (o.id != null ? o.id : label));
           return { label: String(label), value };
         }
         return { label: String(o), value: o };
