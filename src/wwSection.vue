@@ -354,15 +354,17 @@
           </div>
           <div v-if="insurances.length" class="vd-table__wrap">
             <table class="vd-table">
-              <thead><tr><th>Policy</th><th>Insurer</th><th>Policy #</th><th class="vd-num">Coverage</th><th>Status</th><th>Expires</th><th class="vd-num">Actions</th></tr></thead>
+              <thead><tr><th>Policy</th><th>Insurer</th><th>Policy #</th><th class="vd-num">Coverage</th><th>Status</th><th>Expires</th><th>Verified By</th><th>Verified At</th><th class="vd-num">Actions</th></tr></thead>
               <tbody>
                 <tr v-for="(ins, i) in insurances" :key="i">
-                  <td><strong>{{ rowVal(ins, ['policy_type']) || 'Policy' }}</strong></td>
+                  <td><strong>{{ titleCase(rowVal(ins, ['policy_type'])) || 'Policy' }}</strong></td>
                   <td class="vd-muted">{{ rowVal(ins, ['insurer_name']) || '—' }}</td>
                   <td class="vd-muted">{{ rowVal(ins, ['policy_number']) || '—' }}</td>
                   <td class="vd-num">{{ money(rowVal(ins, ['coverage_amount'])) }}</td>
                   <td><span class="vd-pill" :class="`vd-pill--${statusKey(rowVal(ins, ['status']))}`"><span class="vd-pill__dot"></span>{{ prettyStatus(rowVal(ins, ['status']) || 'pending') }}</span></td>
                   <td :class="{ 'vd-text--danger': isExpired(ins) }">{{ fmtDate(rowVal(ins, ['expiration_date'])) }}</td>
+                  <td class="vd-muted">{{ nameOf(rowVal(ins, ['verified_by', 'verifiedBy'])) || '—' }}</td>
+                  <td class="vd-muted">{{ fmtDate(rowVal(ins, ['verified_at', 'verifiedAt'])) }}</td>
                   <td class="vd-num">
                     <div class="vd-rowactions">
                       <span v-if="isVerified(ins)" class="vd-verified"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('check-circle')"></path></svg> Verified</span>
@@ -785,6 +787,9 @@ export default {
       return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
     },
     prettyStatus(s) { return String(s == null ? "" : s).replace(/[_-]+/g, " ").trim(); },
+    // "general_liability" -> "General Liability"
+    titleCase(s) { return String(s == null ? "" : s).replace(/[_-]+/g, " ").trim().toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()); },
+    nameOf(v) { if (v && typeof v === "object") return v.name || v.full_name || v.label || v.title || ""; return v || ""; },
     statusKey(status) {
       const s = (status || "").toString().toLowerCase();
       if (s.includes("progress") || s.includes("review")) return "warning";
