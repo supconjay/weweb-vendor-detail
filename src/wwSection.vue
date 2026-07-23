@@ -1,24 +1,6 @@
 <template>
   <div class="vd-root" :class="themeClass" :style="rootStyle">
    <div class="vd-inner">
-    <!-- ============================ INSURANCE WARNING ============================ -->
-    <button
-      v-if="content.showInsuranceWarning !== false && insuranceAlerts.length"
-      type="button" class="vd-alert" :class="`vd-alert--${alertLevel}`"
-      @click="selectTab('insurance')"
-    >
-      <span class="vd-alert__icon"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('alert-triangle')"></path></svg></span>
-      <span class="vd-alert__body">
-        <strong class="vd-alert__title">{{ alertLevel === 'danger' ? 'Insurance not active' : 'Insurance expiring soon' }}</strong>
-        <span class="vd-alert__list">
-          <span v-for="(a, ai) in insuranceAlerts" :key="ai" class="vd-alert__item" :class="`vd-text--${a.level}`">
-            <span class="vd-alert__dot"></span>{{ a.msg }}
-          </span>
-        </span>
-      </span>
-      <svg class="vd-svg vd-alert__chev" v-bind="svgAttrs"><path :d="ic('external')"></path></svg>
-    </button>
-
     <!-- ============================ HEADER ============================ -->
     <header class="vd-header">
       <div class="vd-header__bar">
@@ -72,6 +54,24 @@
         </a>
       </div>
     </header>
+
+    <!-- ============================ INSURANCE WARNING ============================ -->
+    <button
+      v-if="content.showInsuranceWarning !== false && insuranceAlerts.length"
+      type="button" class="vd-alert" :class="`vd-alert--${alertLevel}`"
+      @click="selectTab('insurance')"
+    >
+      <span class="vd-alert__icon"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('alert-triangle')"></path></svg></span>
+      <span class="vd-alert__body">
+        <strong class="vd-alert__title">{{ alertLevel === 'danger' ? 'Insurance not active' : 'Insurance expiring soon' }}</strong>
+        <span class="vd-alert__list">
+          <span v-for="(a, ai) in insuranceAlerts" :key="ai" class="vd-alert__item" :class="`vd-text--${a.level}`">
+            <span class="vd-alert__dot"></span>{{ a.msg }}
+          </span>
+        </span>
+      </span>
+      <svg class="vd-svg vd-alert__chev" v-bind="svgAttrs"><path :d="ic('external')"></path></svg>
+    </button>
 
     <!-- ============================ TAB BAR ============================ -->
     <nav class="vd-tabs" role="tablist">
