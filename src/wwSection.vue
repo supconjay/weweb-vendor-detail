@@ -330,12 +330,13 @@
           <div class="vd-card__header"><div><h2 class="vd-card__heading vd-card__heading--lg">Jobs</h2><p class="vd-card__sub">{{ jobs.length }} work order{{ jobs.length === 1 ? '' : 's' }}</p></div></div>
           <div v-if="jobs.length" class="vd-table__wrap">
             <table class="vd-table">
-              <thead><tr><th>Title</th><th>Status</th><th>Address</th><th class="vd-num">Actions</th></tr></thead>
+              <thead><tr><th>Title</th><th>Status</th><th>Address</th><th>Created</th><th class="vd-num">Actions</th></tr></thead>
               <tbody>
                 <tr v-for="(j, i) in jobs" :key="i">
                   <td><strong>{{ rowVal(j, ['display','title','name']) }}</strong></td>
                   <td><span class="vd-pill" :class="`vd-pill--${statusKey(rowVal(j, ['Status','status']))}`"><span class="vd-pill__dot"></span>{{ rowVal(j, ['Status','status']) || '—' }}</span></td>
                   <td class="vd-muted">{{ rowVal(j, ['address_string','address']) || '—' }}</td>
+                  <td class="vd-muted">{{ fmtDate(rowVal(j, ['Date Created','date_created','created_at'])) }}</td>
                   <td class="vd-num"><button type="button" class="vd-btn vd-btn--sm" @click="emitItem('jobClick', i, j)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('external')"></path></svg> View</button></td>
                 </tr>
               </tbody>
@@ -601,11 +602,13 @@ export default {
       return [
         { key: "email", label: "Email", type: "email" },
         { key: "nickname", label: "Nickname", type: "text" },
-        { key: "category", label: "Category", type: "select", optionsProp: "categoryOptions" },
+        // Tag fields are paired with each other so a long tag list doesn't
+        // stretch a short field beside it (2-column rows size to the tallest cell).
         { key: "primary_skills", label: "Primary Skills", type: "tags", optionsProp: "skillOptions" },
         { key: "secondary_skills", label: "Secondary Skills", type: "tags", optionsProp: "skillOptions" },
         { key: "markets", label: "Markets", type: "tags", optionsProp: "marketOptions" },
         { key: "lobs", label: "Lines of Business", type: "tags", optionsProp: "lobOptions" },
+        { key: "category", label: "Category", type: "select", optionsProp: "categoryOptions" },
         { key: "phone", label: "Phone Number", type: "text" },
         { key: "home_address", label: "Address", type: "text" },
         { key: "dob", label: "Date of Birth", type: "date" },
