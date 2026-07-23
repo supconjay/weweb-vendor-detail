@@ -164,6 +164,18 @@ export default {
         { policy_type: "General Liability", insurer_name: "Acme Insurance Co.", policy_number: "GL-889231", coverage_amount: 1000000, effective_date: "2026-01-01", expiration_date: "2026-12-31", agent_name: "Dana Lee", agent_phone: "(555) 010-2020", status: "pending", document_url: "" },
       ],
     },
+    // Warning banner: flags required coverages that are missing, expired, or expiring
+    // soon — reads the same insurance collection above.
+    showInsuranceWarning: { label: { en: "Show insurance warning banner" }, type: "OnOff", defaultValue: true, bindable: true },
+    insuranceWarnDays: { label: { en: "Warn when expiring within (days)" }, type: "Number", options: { min: 1, max: 365, step: 1 }, defaultValue: 30, bindable: true },
+    // Advanced: required coverages. Each = { label, keywords: [policy_type substrings] }.
+    requiredInsurance: {
+      label: { en: "Required coverages (advanced)" }, type: "Array", bindable: true, section: "settings",
+      defaultValue: [
+        { label: "General Liability", keywords: ["general liability", "general_liability"] },
+        { label: "Workers' Comp", keywords: ["workers comp", "workers_comp", "compensation"] },
+      ],
+    },
     licenses: {
       label: { en: "Licenses (bind collection)" }, type: "Array", bindable: true,
       defaultValue: [

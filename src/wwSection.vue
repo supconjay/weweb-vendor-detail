@@ -1,6 +1,24 @@
 <template>
   <div class="vd-root" :class="themeClass" :style="rootStyle">
    <div class="vd-inner">
+    <!-- ============================ INSURANCE WARNING ============================ -->
+    <button
+      v-if="content.showInsuranceWarning !== false && insuranceAlerts.length"
+      type="button" class="vd-alert" :class="`vd-alert--${alertLevel}`"
+      @click="selectTab('insurance')"
+    >
+      <span class="vd-alert__icon"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('alert-triangle')"></path></svg></span>
+      <span class="vd-alert__body">
+        <strong class="vd-alert__title">{{ alertLevel === 'danger' ? 'Insurance not active' : 'Insurance expiring soon' }}</strong>
+        <span class="vd-alert__list">
+          <span v-for="(a, ai) in insuranceAlerts" :key="ai" class="vd-alert__item" :class="`vd-text--${a.level}`">
+            <span class="vd-alert__dot"></span>{{ a.msg }}
+          </span>
+        </span>
+      </span>
+      <svg class="vd-svg vd-alert__chev" v-bind="svgAttrs"><path :d="ic('external')"></path></svg>
+    </button>
+
     <!-- ============================ HEADER ============================ -->
     <header class="vd-header">
       <div class="vd-header__bar">
@@ -467,6 +485,7 @@ const ICONS = {
   check: "M20 6L9 17l-5-5",
   "check-circle": "M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3",
   "alert-circle": "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 8v4M12 16h.01",
+  "alert-triangle": "M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",
   clipboard: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z",
   pencil: "M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z",
   x: "M18 6L6 18M6 6l12 12",
@@ -589,7 +608,7 @@ export default {
         { key: "home_address", label: "Address", type: "text" },
         { key: "dob", label: "Date of Birth", type: "date" },
         { key: "date_onboarded", label: "Date Onboarded", type: "date", editable: false },
-        { key: "terms", label: "Terms", type: "select", optionsProp: "termOptions" },
+        { key: "payment_terms_id", label: "Terms", type: "select", optionsProp: "termOptions", optionLabel: "name", optionValue: "id" },
         { key: "how_are_they_scheduled", label: "How Are They Scheduled", type: "select", optionsProp: "scheduleOptions" },
         { key: "price_guide_verified", label: "Price Guide Verified", type: "select", optionsProp: "priceGuideOptions" },
         { key: "status", label: "Status", type: "select", optionsProp: "statusOptions" },
@@ -630,6 +649,47 @@ export default {
     insurances() { return this.asArray(this.content.insurances); },
     licenses() { return this.asArray(this.content.licenses); },
     payouts() { return this.asArray(this.content.payouts); },
+    // ---- insurance warning ----
+    // Which coverages are required, and the policy_type keywords that identify them.
+    requiredInsurance() {
+      const src = this.asArray(this.content.requiredInsurance);
+      if (src.length) return src.map((r) => (typeof r === "object" ? { label: r.label || r.name || "", keywords: Array.isArray(r.keywords) ? r.keywords : String(r.keywords || r.label || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean) } : { label: String(r), keywords: [String(r).toLowerCase()] }));
+      return [
+        { label: "General Liability", keywords: ["general liability", "general_liability", "gen liability", "genliability"] },
+        { label: "Workers' Comp", keywords: ["workers comp", "workers_comp", "workers' comp", "worker comp", "workmans", "compensation"] },
+      ];
+    },
+    insuranceAlerts() {
+      const n = Number(this.content.insuranceWarnDays);
+      const warnDays = n > 0 ? Math.floor(n) : 30;
+      const list = this.insurances;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const alerts = [];
+      this.requiredInsurance.forEach((req) => {
+        const matches = list.filter((p) => {
+          const t = String(this.rowVal(p, ["policy_type", "type", "coverage_type"])).toLowerCase();
+          return req.keywords.some((k) => k && t.indexOf(k) !== -1);
+        });
+        if (!matches.length) { alerts.push({ level: "danger", type: req.label, kind: "missing", msg: `${req.label} — no policy on file` }); return; }
+        // Use the policy with the furthest expiration (best coverage).
+        let best = matches[0], bestT = -Infinity;
+        matches.forEach((p) => { const d = this.parseDate(this.rowVal(p, ["expiration_date", "expires", "expiry"])); const t = d && !isNaN(d) ? d.getTime() : -Infinity; if (t >= bestT) { bestT = t; best = p; } });
+        const status = String(this.rowVal(best, ["status"])).toLowerCase();
+        const exp = this.parseDate(this.rowVal(best, ["expiration_date", "expires", "expiry"]));
+        const validExp = exp && !isNaN(exp);
+        if (status === "expired" || status === "rejected" || (validExp && exp < today)) {
+          alerts.push({ level: "danger", type: req.label, kind: "expired", msg: `${req.label} — expired${validExp ? " " + this.fmtDate(this.rowVal(best, ["expiration_date"])) : ""}` });
+          return;
+        }
+        if (!validExp) { alerts.push({ level: "warning", type: req.label, kind: "no-date", msg: `${req.label} — no expiration date` }); return; }
+        const daysLeft = Math.ceil((exp - today) / 86400000);
+        if (daysLeft <= warnDays) {
+          alerts.push({ level: "warning", type: req.label, kind: "expiring", days: daysLeft, msg: `${req.label} — expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}` });
+        }
+      });
+      return alerts;
+    },
+    alertLevel() { return this.insuranceAlerts.some((a) => a.level === "danger") ? "danger" : "warning"; },
     // ---- user ----
     userObj() { return this.firstOf(this.content.user); },
     roleOptions() {
@@ -1102,6 +1162,25 @@ export default {
 .vd-card__heading { margin: 0; font-size: 15px; font-weight: 700; color: var(--text); }
 .vd-card__heading--lg { font-size: 18px; }
 .vd-card__sub { margin: 4px 0 0; color: var(--text-muted); font-size: 13px; }
+
+/* ---- insurance warning banner ---- */
+.vd-alert { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 14px 16px; border-radius: var(--radius); border: 1px solid; font-family: inherit; cursor: pointer; animation: vd-flash 2s ease-in-out infinite; transition: filter .15s; }
+.vd-alert:hover { filter: brightness(1.02); }
+.vd-alert--danger { background: color-mix(in srgb, var(--danger) 10%, var(--surface)); border-color: color-mix(in srgb, var(--danger) 45%, transparent); color: var(--danger); }
+.vd-alert--warning { background: color-mix(in srgb, var(--warning) 12%, var(--surface)); border-color: color-mix(in srgb, var(--warning) 45%, transparent); color: var(--warning); }
+.vd-alert__icon { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: color-mix(in srgb, currentColor 16%, transparent); }
+.vd-alert__icon .vd-svg { width: 19px; height: 19px; }
+.vd-alert__body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.vd-alert__title { font-size: 14px; font-weight: 700; color: var(--text); }
+.vd-alert__list { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.vd-alert__item { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; }
+.vd-alert__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.vd-alert__chev { flex: none; width: 15px; height: 15px; color: var(--text-subtle); }
+@keyframes vd-flash {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 22%, transparent); }
+  50%      { box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .vd-alert { animation: none; } }
 
 /* ---- header ---- */
 .vd-header { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: clamp(16px, 2.4vw, 22px); }
