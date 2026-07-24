@@ -899,16 +899,34 @@ export default {
       const mapped = list.map((o) => {
         if (o && typeof o === "object") {
           const label = o[lk] != null && o[lk] !== "" ? o[lk] : (o.label || o.name || o.title || o.value || "");
-          const value = o[vk] != null && o[vk] !== "" ? o[vk] : (o.airtable_id != null ? o.airtable_id : (o.id != null ? o.id : label));
+          // Collections name the Airtable key differently (airtable_id on some,
+          // airtable_record_id on others) — accept either.
+          const airtableId = this.airtableIdOf(o);
+          const value = o[vk] != null && o[vk] !== "" ? o[vk] : (airtableId || (o.id != null ? o.id : label));
           // Carry both ids so the fieldEdit event can hand back whichever the
           // caller needs (Airtable id vs Supabase uuid).
           const id = o.id != null && o.id !== "" ? o.id : "";
-          const airtableId = o.airtable_id != null && o.airtable_id !== "" ? o.airtable_id : "";
           return { label: String(label), value, id, airtableId };
         }
         return { label: String(o), value: o, id: o, airtableId: "" };
       });
       return mapped;
+    },
+    airtableIdOf(o) {
+      const keys = ["airtable_id", "airtable_record_id", "airtableId", "airtableRecordId"];
+      for (const k of keys) if (o && o[k] != null && o[k] !== "") return o[k];
+      return "";
+    },
+    // Match a stored value against an option by its value, Supabase id, OR Airtable
+    // id, so a record saved under either id form still resolves to its label.
+    findOption(f, v) {
+      if (v == null || v === "") return null;
+      const s = String(v);
+      const opts = this.optionsFor(f);
+      return opts.find((o) => String(o.value) === s)
+        || opts.find((o) => o.id !== "" && String(o.id) === s)
+        || opts.find((o) => o.airtableId !== "" && String(o.airtableId) === s)
+        || null;
     },
     // Options filtered by the tag-picker search box.
     filteredOptions(f) {
@@ -922,7 +940,7 @@ export default {
       if (v == null || v === "") return "";
       if (f.type === "date") return this.fmtDate(v);
       if (f.type === "select") {
-        const opt = this.optionsFor(f).find((o) => String(o.value) === String(v));
+        const opt = this.findOption(f, v);
         return opt ? opt.label : String(v);
       }
       return String(v);
@@ -930,9 +948,8 @@ export default {
     displayTags(f) {
       const raw = this.vendorField(f.key);
       const arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-      const opts = this.optionsFor(f);
-      return arr.map((v) => {
-        const opt = opts.find((o) => String(o.value) === String(v));
+      return arr.filter((v) => v != null && v !== "").map((v) => {
+        const opt = this.findOption(f, v);
         return opt ? opt.label : String(v);
       });
     },
@@ -941,9 +958,20 @@ export default {
       this.tagQuery = "";
       const v = this.vendorField(f.key);
       if (f.type === "tags") {
-        this.editArray = Array.isArray(v) ? v.slice() : (v ? [v] : []);
+        // Normalize stored values (which may be uuids or Airtable ids) to the
+        // canonical option value so selections highlight and re-save cleanly.
+        // Dedupe, since two stored forms can normalize to the same record.
+        const arr = Array.isArray(v) ? v.slice() : (v ? [v] : []);
+        const seen = {};
+        this.editArray = arr
+          .filter((x) => x != null && x !== "")
+          .map((x) => { const o = this.findOption(f, x); return o ? o.value : x; })
+          .filter((x) => { const k = String(x); if (seen[k]) return false; seen[k] = true; return true; });
       } else if (f.type === "date") {
         this.editValue = v ? String(v).slice(0, 10) : "";
+      } else if (f.type === "select") {
+        const o = this.findOption(f, v);
+        this.editValue = o ? o.value : (v == null ? "" : v);
       } else {
         this.editValue = v == null ? "" : v;
       }
@@ -963,8 +991,7 @@ export default {
     saveTags(f) {
       const value = this.editArray.slice();
       this.editingKey = null;
-      const opts = this.optionsFor(f);
-      const chosen = value.map((v) => opts.find((o) => String(o.value) === String(v)) || { value: v, label: String(v), id: "", airtableId: "" });
+      const chosen = value.map((v) => this.findOption(f, v) || { value: v, label: String(v), id: "", airtableId: "" });
       const valueLabel = chosen.map((o) => o.label);
       const ids = chosen.map((o) => o.id);
       const airtableIds = chosen.map((o) => o.airtableId);
@@ -979,7 +1006,7 @@ export default {
       this.editingKey = null;
       let valueLabel = value, id = "", airtableId = "";
       if (f.type === "select") {
-        const opt = this.optionsFor(f).find((o) => String(o.value) === String(value));
+        const opt = this.findOption(f, value);
         if (opt) { valueLabel = opt.label; id = opt.id; airtableId = opt.airtableId; }
       }
       this.fireEvent("fieldEdit", { key: f.key, label: f.label, value, valueLabel, id, airtableId, type: f.type, patch: { [f.key]: value } });
