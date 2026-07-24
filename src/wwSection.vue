@@ -898,7 +898,8 @@ export default {
       const vk = f.optionValue || this.content.optionValueField || "airtable_id";
       const mapped = list.map((o) => {
         if (o && typeof o === "object") {
-          const label = o[lk] != null && o[lk] !== "" ? o[lk] : (o.label || o.name || o.title || o.value || "");
+          // Field names vary by source (label / name / Name on Airtable collections).
+          const label = o[lk] != null && o[lk] !== "" ? o[lk] : (o.label || o.Label || o.name || o.Name || o.title || o.Title || o.value || "");
           // Collections name the Airtable key differently (airtable_id on some,
           // airtable_record_id on others) — accept either.
           const airtableId = this.airtableIdOf(o);
@@ -915,6 +916,8 @@ export default {
     airtableIdOf(o) {
       const keys = ["airtable_id", "airtable_record_id", "airtableId", "airtableRecordId"];
       for (const k of keys) if (o && o[k] != null && o[k] !== "") return o[k];
+      // Native Airtable collections expose the record id directly as `id`.
+      if (o && typeof o.id === "string" && /^rec[A-Za-z0-9]{10,}$/.test(o.id)) return o.id;
       return "";
     },
     // Match a stored value against an option by its value, Supabase id, OR Airtable
