@@ -193,6 +193,10 @@ export default {
     },
     currency: { label: { en: "Currency" }, type: "Text", defaultValue: "USD", bindable: true, section: "settings" },
 
+    // ============ table pagination (Jobs & Payouts) ============
+    paginate: { label: { en: "Paginate Jobs & Payouts" }, type: "OnOff", defaultValue: true, bindable: true },
+    pageSize: { label: { en: "Rows per page" }, type: "Number", options: { min: 1, max: 100, step: 1 }, defaultValue: 10, bindable: true },
+
     // ============ user management ============
     user: {
       label: { en: "User record (bind)" }, type: "Array", bindable: true,

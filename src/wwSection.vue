@@ -332,15 +332,23 @@
             <table class="vd-table">
               <thead><tr><th>Title</th><th>Status</th><th>Address</th><th>Created</th><th class="vd-num">Actions</th></tr></thead>
               <tbody>
-                <tr v-for="(j, i) in jobs" :key="i">
+                <tr v-for="(j, i) in pagedJobs" :key="jobsOffset + i">
                   <td><strong>{{ rowVal(j, ['display','title','name']) }}</strong></td>
                   <td><span class="vd-pill" :class="`vd-pill--${statusKey(rowVal(j, ['Status','status']))}`"><span class="vd-pill__dot"></span>{{ rowVal(j, ['Status','status']) || '—' }}</span></td>
                   <td class="vd-muted">{{ rowVal(j, ['address_string','address']) || '—' }}</td>
                   <td class="vd-muted">{{ fmtDate(rowVal(j, ['Date Created','date_created','created_at'])) }}</td>
-                  <td class="vd-num"><button type="button" class="vd-btn vd-btn--sm" @click="emitItem('jobClick', i, j)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('external')"></path></svg> View</button></td>
+                  <td class="vd-num"><button type="button" class="vd-btn vd-btn--sm" @click="emitItem('jobClick', jobsOffset + i, j)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('external')"></path></svg> View</button></td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div v-if="jobs.length && paginateOn && jobsTotalPages > 1" class="vd-pager">
+            <span class="vd-pager__info">{{ rangeText(jobsOffset, pagedJobs.length, jobsCount) }}</span>
+            <div class="vd-pager__nav">
+              <button type="button" class="vd-pager__btn" :disabled="jobsPage <= 1" aria-label="Previous page" @click="goJobsPage(jobsPage - 1)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('chevron-left')"></path></svg></button>
+              <span class="vd-pager__page">Page {{ jobsPage }} of {{ jobsTotalPages }}</span>
+              <button type="button" class="vd-pager__btn" :disabled="jobsPage >= jobsTotalPages" aria-label="Next page" @click="goJobsPage(jobsPage + 1)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('chevron-right')"></path></svg></button>
+            </div>
           </div>
           <div v-else class="vd-empty"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('briefcase')"></path></svg><span>No jobs yet</span></div>
         </div>
@@ -419,16 +427,24 @@
             <table class="vd-table">
               <thead><tr><th>Remittance Name</th><th>Status</th><th>Address</th><th>Due Date</th><th class="vd-num">Amount</th><th class="vd-num">Actions</th></tr></thead>
               <tbody>
-                <tr v-for="(p, i) in payouts" :key="i">
+                <tr v-for="(p, i) in pagedPayouts" :key="payoutsOffset + i">
                   <td><strong>{{ rowVal(p, ['remittance_name','Remittance Name','name']) }}</strong></td>
                   <td><span class="vd-pill" :class="`vd-pill--${statusKey(rowVal(p, ['Status','status']))}`"><span class="vd-pill__dot"></span>{{ rowVal(p, ['Status','status']) || '—' }}</span></td>
                   <td class="vd-muted">{{ rowVal(p, ['address','Address CONCAT (from Projects)','address_string']) || '—' }}</td>
                   <td class="vd-muted">{{ fmtDate(rowVal(p, ['adjusted_due_date','Adjusted Due Date','due_date'])) }}</td>
                   <td class="vd-num vd-num--strong">{{ money(rowVal(p, ['amount','Amount'])) }}</td>
-                  <td class="vd-num"><button type="button" class="vd-btn vd-btn--sm" @click="emitItem('payoutClick', i, p)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('external')"></path></svg> View</button></td>
+                  <td class="vd-num"><button type="button" class="vd-btn vd-btn--sm" @click="emitItem('payoutClick', payoutsOffset + i, p)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('external')"></path></svg> View</button></td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div v-if="payouts.length && paginateOn && payoutsTotalPages > 1" class="vd-pager">
+            <span class="vd-pager__info">{{ rangeText(payoutsOffset, pagedPayouts.length, payoutsCount) }}</span>
+            <div class="vd-pager__nav">
+              <button type="button" class="vd-pager__btn" :disabled="payoutsPage <= 1" aria-label="Previous page" @click="goPayoutsPage(payoutsPage - 1)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('chevron-left')"></path></svg></button>
+              <span class="vd-pager__page">Page {{ payoutsPage }} of {{ payoutsTotalPages }}</span>
+              <button type="button" class="vd-pager__btn" :disabled="payoutsPage >= payoutsTotalPages" aria-label="Next page" @click="goPayoutsPage(payoutsPage + 1)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('chevron-right')"></path></svg></button>
+            </div>
           </div>
           <div v-else class="vd-empty"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('credit-card')"></path></svg><span>No payouts yet</span></div>
         </div>
@@ -489,6 +505,8 @@ const ICONS = {
   "check-circle": "M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3",
   "alert-circle": "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 8v4M12 16h.01",
   "alert-triangle": "M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",
+  "chevron-left": "M15 18l-6-6 6-6",
+  "chevron-right": "M9 18l6-6-6-6",
   clipboard: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z",
   pencil: "M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z",
   x: "M18 6L6 18M6 6l12 12",
@@ -532,6 +550,9 @@ export default {
       editValue: "",
       editArray: [],
       tagQuery: "",
+      // table pagination
+      jobsPage: 1,
+      payoutsPage: 1,
       // feed composer
       composerOpen: false,
       composerEmpty: true,
@@ -555,6 +576,14 @@ export default {
     // creates an update loop inside the WeWeb editor (content is re-proxied on
     // every interaction), which crashes with an emitsOptions error.
     "content.user": { handler() { this.syncUserState(); }, deep: false },
+    // Clamp the page if the collection shrinks. These watch primitive counts, so
+    // they can't feed back into a render loop.
+    jobsCount() { if (this.jobsPage > this.jobsTotalPages) this.jobsPage = this.jobsTotalPages; },
+    payoutsCount() { if (this.payoutsPage > this.payoutsTotalPages) this.payoutsPage = this.payoutsTotalPages; },
+    pageSize() {
+      if (this.jobsPage > this.jobsTotalPages) this.jobsPage = this.jobsTotalPages;
+      if (this.payoutsPage > this.payoutsTotalPages) this.payoutsPage = this.payoutsTotalPages;
+    },
   },
   beforeUnmount() { this.attachments.forEach((a) => { if (a.url) try { URL.revokeObjectURL(a.url); } catch (e) {} }); },
   computed: {
@@ -654,6 +683,17 @@ export default {
     insurances() { return this.asArray(this.content.insurances); },
     licenses() { return this.asArray(this.content.licenses); },
     payouts() { return this.asArray(this.content.payouts); },
+    // ---- table pagination (client-side, over the bound collection) ----
+    paginateOn() { return this.content.paginate !== false; },
+    pageSize() { const n = Number(this.content.pageSize); return n > 0 ? Math.floor(n) : 10; },
+    jobsCount() { return this.jobs.length; },
+    jobsTotalPages() { return Math.max(1, Math.ceil(this.jobsCount / this.pageSize)); },
+    jobsOffset() { return this.paginateOn ? (this.jobsPage - 1) * this.pageSize : 0; },
+    pagedJobs() { return this.paginateOn ? this.jobs.slice(this.jobsOffset, this.jobsOffset + this.pageSize) : this.jobs; },
+    payoutsCount() { return this.payouts.length; },
+    payoutsTotalPages() { return Math.max(1, Math.ceil(this.payoutsCount / this.pageSize)); },
+    payoutsOffset() { return this.paginateOn ? (this.payoutsPage - 1) * this.pageSize : 0; },
+    pagedPayouts() { return this.paginateOn ? this.payouts.slice(this.payoutsOffset, this.payoutsOffset + this.pageSize) : this.payouts; },
     // ---- insurance warning ----
     // Which coverages are required, and the policy_type keywords that identify them.
     requiredInsurance() {
@@ -834,6 +874,10 @@ export default {
       if (this.isEditing) return;
       this.$emit("trigger-event", { name, event: event || {} });
     },
+    // ---- pagination ----
+    goJobsPage(p) { this.jobsPage = Math.max(1, Math.min(this.jobsTotalPages, p)); },
+    goPayoutsPage(p) { this.payoutsPage = Math.max(1, Math.min(this.payoutsTotalPages, p)); },
+    rangeText(offset, shown, total) { return total ? `${offset + 1}–${offset + shown} of ${total}` : "0 of 0"; },
     // ---- tabs / header ----
     selectTab(key) { this.activeTab = key; this.fireEvent("tabChange", { tab: key }); },
     emit(name) { this.fireEvent(name, {}); },
@@ -1347,6 +1391,16 @@ export default {
 .vd-table tbody tr:last-child td { border-bottom: none; }
 .vd-table tbody tr:hover { background: var(--surface-2); }
 .vd-num { text-align: right; } .vd-num--strong { font-weight: 700; }
+
+/* ---- table pagination ---- */
+.vd-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.vd-pager__info { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+.vd-pager__nav { display: flex; align-items: center; gap: 8px; }
+.vd-pager__btn { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+.vd-pager__btn:hover:not(:disabled) { background: var(--surface-2); color: var(--text); border-color: var(--border-strong); }
+.vd-pager__btn:disabled { opacity: .4; cursor: not-allowed; }
+.vd-pager__btn .vd-svg { width: 16px; height: 16px; }
+.vd-pager__page { font-size: 12.5px; font-weight: 600; color: var(--text-muted); min-width: 96px; text-align: center; }
 
 /* ---- insurance cards (grid) ---- */
 .vd-insgrid { display: grid; grid-template-columns: 1fr; gap: 14px; }
