@@ -250,18 +250,18 @@
           </div>
 
           <ul v-if="activityItems.length" class="pp-feed">
-            <li v-for="(f, i) in activityItems" :key="i" class="pp-feeditem" :class="{ 'pp-feeditem--last': i === activityItems.length - 1 }">
-              <span class="vd-avatar" @click="emitItem('activityItemClick', i, f)">
+            <li v-for="(f, i) in pagedActivity" :key="activityOffset + i" class="pp-feeditem" :class="{ 'pp-feeditem--last': i === pagedActivity.length - 1 }">
+              <span class="vd-avatar" @click="emitItem('activityItemClick', activityOffset + i, f)">
                 <img v-if="avatarUrl(f)" :src="avatarUrl(f)" :alt="authorName(f)" /><template v-else>{{ initials(authorName(f)) }}</template>
               </span>
               <div class="pp-feeditem__body">
                 <div class="pp-feeditem__top">
-                  <span class="pp-feeditem__head" @click="emitItem('activityItemClick', i, f)">
+                  <span class="pp-feeditem__head" @click="emitItem('activityItemClick', activityOffset + i, f)">
                     <strong>{{ authorName(f) || 'Unknown' }}</strong>
                     <span v-if="activityLabel(f)" class="pp-feeditem__activity">{{ activityLabel(f) }}</span>
                     <span class="vd-muted">{{ timeText(f) }}</span>
                   </span>
-                  <button v-if="canDelete(f)" class="pp-feeditem__del" type="button" aria-label="Delete" @click.stop="emitActivityDelete(i, f)">
+                  <button v-if="canDelete(f)" class="pp-feeditem__del" type="button" aria-label="Delete" @click.stop="emitActivityDelete(activityOffset + i, f)">
                     <svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('trash')"></path></svg>
                   </button>
                 </div>
@@ -270,7 +270,7 @@
                   <p v-else class="pp-feeditem__text">{{ stripHtml(bodyText(f)) }}</p>
                 </template>
                 <div v-if="attachmentsOf(f).length" class="pp-atts">
-                  <button v-for="(att, j) in attachmentsOf(f)" :key="j" type="button" class="pp-att" :class="isImage(att) ? 'pp-att--img' : 'pp-att--file'" :title="attName(att)" @click="emitAtt(i, j, att)">
+                  <button v-for="(att, j) in attachmentsOf(f)" :key="j" type="button" class="pp-att" :class="isImage(att) ? 'pp-att--img' : 'pp-att--file'" :title="attName(att)" @click="emitAtt(activityOffset + i, j, att)">
                     <template v-if="isImage(att)"><img v-if="attThumb(att)" :src="attThumb(att)" :alt="attName(att)" /><svg v-else class="vd-svg" v-bind="svgAttrs"><path :d="ic('image')"></path></svg></template>
                     <template v-else><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('file')"></path></svg><span class="pp-att__name">{{ attName(att) }}</span></template>
                   </button>
@@ -278,7 +278,15 @@
               </div>
             </li>
           </ul>
-          <div v-else class="vd-empty"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('rss')"></path></svg><span>No activity yet</span></div>
+          <div v-if="activityItems.length && paginateOn && activityTotalPages > 1" class="vd-pager">
+            <span class="vd-pager__info">{{ rangeText(activityOffset, pagedActivity.length, activityCount) }}</span>
+            <div class="vd-pager__nav">
+              <button type="button" class="vd-pager__btn" :disabled="activityPage <= 1" aria-label="Previous page" @click="goActivityPage(activityPage - 1)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('chevron-left')"></path></svg></button>
+              <span class="vd-pager__page">Page {{ activityPage }} of {{ activityTotalPages }}</span>
+              <button type="button" class="vd-pager__btn" :disabled="activityPage >= activityTotalPages" aria-label="Next page" @click="goActivityPage(activityPage + 1)"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('chevron-right')"></path></svg></button>
+            </div>
+          </div>
+          <div v-if="!activityItems.length" class="vd-empty"><svg class="vd-svg" v-bind="svgAttrs"><path :d="ic('rss')"></path></svg><span>No activity yet</span></div>
         </div>
       </section>
 
@@ -553,6 +561,7 @@ export default {
       // table pagination
       jobsPage: 1,
       payoutsPage: 1,
+      activityPage: 1,
       // feed composer
       composerOpen: false,
       composerEmpty: true,
@@ -580,9 +589,11 @@ export default {
     // they can't feed back into a render loop.
     jobsCount() { if (this.jobsPage > this.jobsTotalPages) this.jobsPage = this.jobsTotalPages; },
     payoutsCount() { if (this.payoutsPage > this.payoutsTotalPages) this.payoutsPage = this.payoutsTotalPages; },
+    activityCount() { if (this.activityPage > this.activityTotalPages) this.activityPage = this.activityTotalPages; },
     pageSize() {
       if (this.jobsPage > this.jobsTotalPages) this.jobsPage = this.jobsTotalPages;
       if (this.payoutsPage > this.payoutsTotalPages) this.payoutsPage = this.payoutsTotalPages;
+      if (this.activityPage > this.activityTotalPages) this.activityPage = this.activityTotalPages;
     },
   },
   beforeUnmount() { this.attachments.forEach((a) => { if (a.url) try { URL.revokeObjectURL(a.url); } catch (e) {} }); },
@@ -693,6 +704,10 @@ export default {
     payoutsTotalPages() { return Math.max(1, Math.ceil(this.payoutsCount / this.pageSize)); },
     payoutsOffset() { return this.paginateOn ? (this.payoutsPage - 1) * this.pageSize : 0; },
     pagedPayouts() { return this.paginateOn ? this.payouts.slice(this.payoutsOffset, this.payoutsOffset + this.pageSize) : this.payouts; },
+    activityCount() { return this.activityItems.length; },
+    activityTotalPages() { return Math.max(1, Math.ceil(this.activityCount / this.pageSize)); },
+    activityOffset() { return this.paginateOn ? (this.activityPage - 1) * this.pageSize : 0; },
+    pagedActivity() { return this.paginateOn ? this.activityItems.slice(this.activityOffset, this.activityOffset + this.pageSize) : this.activityItems; },
     // ---- insurance warning ----
     // Which coverages are required, and the policy_type keywords that identify them.
     requiredInsurance() {
@@ -876,6 +891,7 @@ export default {
     // ---- pagination ----
     goJobsPage(p) { this.jobsPage = Math.max(1, Math.min(this.jobsTotalPages, p)); },
     goPayoutsPage(p) { this.payoutsPage = Math.max(1, Math.min(this.payoutsTotalPages, p)); },
+    goActivityPage(p) { this.activityPage = Math.max(1, Math.min(this.activityTotalPages, p)); },
     rangeText(offset, shown, total) { return total ? `${offset + 1}–${offset + shown} of ${total}` : "0 of 0"; },
     // ---- tabs / header ----
     selectTab(key) { this.activeTab = key; this.fireEvent("tabChange", { tab: key }); },
