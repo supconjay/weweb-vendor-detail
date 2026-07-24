@@ -645,7 +645,6 @@ export default {
         { key: "payment_terms_id", label: "Terms", type: "select", optionsProp: "termOptions", optionLabel: "name", optionValue: "id" },
         { key: "how_are_they_scheduled", label: "How Are They Scheduled", type: "select", optionsProp: "scheduleOptions" },
         { key: "price_guide_verified", label: "Price Guide Verified", type: "select", optionsProp: "priceGuideOptions" },
-        { key: "status", label: "Status", type: "select", optionsProp: "statusOptions" },
         { key: "ap_email", label: "AP Email", type: "email" },
         { key: "email_used_for_payout", label: "Payout Email", type: "email" },
         { key: "notes", label: "Notes", type: "multiline" },

@@ -43,7 +43,7 @@ npx weweb build --name=vendor-detail --type=section
 - **Collections** — `onboardingItems`, `activityItems`, `tickets`, `jobs`,
   `insurances`, `licenses`, `payouts`, `roleOptions`, and the Details option
   sources (`categoryOptions`, `skillOptions`, `marketOptions`, `lobOptions`,
-  `termOptions`, `scheduleOptions`, `priceGuideOptions`, `statusOptions`).
+  `termOptions`, `scheduleOptions`, `priceGuideOptions`).
 - **Box** — `boxEmbedUrl`.
 
 All bindable props accept an array or a WeWeb collection (`{ data: [...] }`).

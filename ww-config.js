@@ -104,7 +104,6 @@ export default {
     termOptions: { label: { en: "Terms options (bind)" }, type: "Array", bindable: true, defaultValue: ["Net 3", "Net 15", "Net 30", "Due on receipt"], section: "settings" },
     scheduleOptions: { label: { en: "Scheduling method options (bind)" }, type: "Array", bindable: true, defaultValue: ["Send WO Details To Email", "Must Call First", "Free To Schedule", "Assign to Portal"], section: "settings" },
     priceGuideOptions: { label: { en: "Price guide options (bind)" }, type: "Array", bindable: true, defaultValue: ["Licensed Price Guide", "Standard Price Guide", "Non Price Guide"], section: "settings" },
-    statusOptions: { label: { en: "Status options (bind)" }, type: "Array", bindable: true, defaultValue: ["Request", "Active", "Inactive", "Terminated"], section: "settings" },
 
     // ============ activity feed ============
     showComposer: { label: { en: "Show note composer" }, type: "OnOff", defaultValue: true, bindable: true },
